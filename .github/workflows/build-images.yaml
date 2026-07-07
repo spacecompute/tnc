@@ -4,18 +4,12 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'yamcs/**'
-      - 'openmct/**'
-      - 'jupyter/**'
-      - 'sle/**'
+      - 'containers/**'
       - '.github/workflows/build-images.yaml'
   pull_request:
     branches: [main, master]
     paths:
-      - 'yamcs/**'
-      - 'openmct/**'
-      - 'jupyter/**'
-      - 'sle/**'
+      - 'containers/**'
       - '.github/workflows/build-images.yaml'
   workflow_dispatch:
   schedule:
@@ -69,8 +63,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.image }}
-          file: ${{ matrix.image }}/Containerfile
+          context: containers/${{ matrix.image }}
+          file: containers/${{ matrix.image }}/Containerfile
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=${{ env.IMAGE_PREFIX }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,6 +1,13 @@
 # Mission Control Systems
 
-Container images for spacecraft mission control systems. Multi-arch (amd64/arm64), published to GitHub Container Registry.
+Container images and Helm charts for spacecraft mission control systems. Multi-arch (amd64/arm64), published to GitHub Container Registry.
+
+## Repository layout
+
+```
+containers/   Dockerfiles for base images
+helm/         Helm charts for Kubernetes deployment
+```
 
 ## Images
 
