@@ -127,8 +127,8 @@ jobs:
         with:
           images: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Create manifest list and push
         working-directory: /tmp/digests
