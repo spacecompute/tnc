@@ -2,6 +2,12 @@ version: '3'
 
 vars:
   WORKFLOW: .github/workflows/build-images.yaml
+  ACT_IMAGE: catthehacker/ubuntu:act-latest
+  ACT_FLAGS: >-
+    -P ubuntu-latest={{.ACT_IMAGE}}
+    -P ubuntu-24.04-arm={{.ACT_IMAGE}}
+    --matrix runner:ubuntu-24.04-arm
+    -v
 
 tasks:
   default:
@@ -12,32 +18,32 @@ tasks:
   build:
     desc: Build all images locally via act
     cmds:
-      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64
+      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}}
 
   build:yamcs:
     desc: Build yamcs image locally
     cmds:
-      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:yamcs
+      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:yamcs
 
   build:openmct:
     desc: Build openmct image locally
     cmds:
-      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:openmct
+      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:openmct
 
   build:jupyter:
     desc: Build jupyter image locally
     cmds:
-      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:jupyter
+      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:jupyter
 
   build:sle:
     desc: Build sle image locally
     cmds:
-      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:sle
+      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:sle
 
   build:dry:
     desc: Dry-run — validate workflow without building
     cmds:
-      - act push -W {{.WORKFLOW}} -j build --dryrun
+      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --dryrun
 
   graph:
     desc: Show workflow graph

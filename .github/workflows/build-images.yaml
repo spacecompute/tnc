@@ -3,8 +3,20 @@ name: Build Container Images
 on:
   push:
     branches: [main, master]
+    paths:
+      - 'yamcs/**'
+      - 'openmct/**'
+      - 'jupyter/**'
+      - 'sle/**'
+      - '.github/workflows/build-images.yaml'
   pull_request:
     branches: [main, master]
+    paths:
+      - 'yamcs/**'
+      - 'openmct/**'
+      - 'jupyter/**'
+      - 'sle/**'
+      - '.github/workflows/build-images.yaml'
   workflow_dispatch:
   schedule:
     # Weekly rebuild to pick up upstream dependency updates
