@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/spacecompute/mission-control-systems/jupyter
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+extraEnv: []
+
+extraVolumes: []
+extraVolumeMounts: []

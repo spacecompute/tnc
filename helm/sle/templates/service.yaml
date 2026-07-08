@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sle.fullname" . }}
+  labels:
+    {{- include "sle.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: sle
+      protocol: TCP
+      name: sle
+  selector:
+    {{- include "sle.selectorLabels" . | nindent 4 }}

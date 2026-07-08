@@ -1,0 +1,6 @@
+apiVersion: v2
+name: sle
+description: jSLE Space Link Extension provider
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/spacecompute/mission-control-systems/openmct
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 9000
+
+env:
+  YAMCS_INSTANCE: myproject
+  YAMCS_PROCESSOR: realtime
+  YAMCS_FOLDER: myproject
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+extraEnv: []
+
+extraVolumes: []
+extraVolumeMounts: []

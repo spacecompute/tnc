@@ -49,3 +49,36 @@ tasks:
     desc: Show workflow graph
     cmds:
       - act push -W {{.WORKFLOW}} --graph
+
+  helm:lint:
+    desc: Lint all Helm charts
+    cmds:
+      - helm lint helm/yamcs helm/openmct helm/jupyter helm/sle
+
+  helm:lint:yamcs:
+    desc: Lint yamcs chart
+    cmds:
+      - helm lint helm/yamcs
+
+  helm:lint:openmct:
+    desc: Lint openmct chart
+    cmds:
+      - helm lint helm/openmct
+
+  helm:lint:jupyter:
+    desc: Lint jupyter chart
+    cmds:
+      - helm lint helm/jupyter
+
+  helm:lint:sle:
+    desc: Lint sle chart
+    cmds:
+      - helm lint helm/sle
+
+  helm:template:
+    desc: Render all chart templates locally
+    cmds:
+      - helm template yamcs helm/yamcs
+      - helm template openmct helm/openmct
+      - helm template jupyter helm/jupyter
+      - helm template sle helm/sle

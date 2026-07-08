@@ -1,0 +1,6 @@
+apiVersion: v2
+name: jupyter
+description: JupyterHub with Python, Ruby, Perl, R, Gnuplot, and Octave kernels
+type: application
+version: 0.1.0
+appVersion: "latest"

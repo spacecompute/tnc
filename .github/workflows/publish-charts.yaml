@@ -1,0 +1,64 @@
+name: Publish Helm Charts
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/publish-charts.yaml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/publish-charts.yaml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  CHART_PREFIX: oci://ghcr.io/${{ github.repository }}/charts
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart: [yamcs, openmct, jupyter, sle]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint chart
+        run: helm lint helm/${{ matrix.chart }}
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        chart: [yamcs, openmct, jupyter, sle]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Package chart
+        run: helm package helm/${{ matrix.chart }}
+
+      - name: Push chart
+        run: helm push ${{ matrix.chart }}-*.tgz ${{ env.CHART_PREFIX }}
