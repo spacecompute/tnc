@@ -89,16 +89,26 @@ tasks:
     cmds:
       - helm lint helm/sle
 
-  helm:deps:
+  helm:deps:mission-control:
     desc: Update Helm chart dependencies for umbrella chart
     cmds:
       - helm dependency update helm/mission-control
 
-  helm:package:
+  helm:package:mission-control:
     desc: Package mission-control umbrella chart
-    deps: [helm:lint, helm:deps]
+    deps: [helm:lint, helm:deps:mission-control]
     cmds:
       - helm package helm/mission-control -d dist/
+
+  helm:package:
+    desc: Package mission-control umbrella chart
+    deps: [helm:lint, helm:package:mission-control]
+    cmds:
+      - |
+        helm package helm/sle -d dist/
+        helm package helm/yamcs -d dist/
+        helm package helm/openmct -d dist/
+        helm package helm/jupyter -d dist/
 
   helm:template:
     desc: Render all chart templates locally
@@ -107,3 +117,4 @@ tasks:
       - helm template openmct helm/openmct
       - helm template jupyter helm/jupyter
       - helm template sle helm/sle
+      - helm template mission-control helm/mission-control
