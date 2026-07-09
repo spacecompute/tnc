@@ -5,9 +5,15 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
-service:
-  type: ClusterIP
-  port: 9000
+command: ["/entrypoint.sh"]
+
+entrypoint: |
+  #!/usr/bin/env bash
+  cd /opt/openmct
+  pkill -f node
+  pkill -f npm
+  npm start
+  tail -f /dev/null
 
 env:
   MAVEN_HTTPS_PROXY: ""
@@ -19,6 +25,24 @@ env:
   YAMCS_PROCESSOR: realtime
   YAMCS_FOLDER: myproject
 
+service:
+  type: ClusterIP
+  port: 9000
+  additionalPorts: []
+
+# Volumes — each entry supports:
+#   enabled:     bool (default false)
+#   mountPath:   container path (required)
+#   type:        emptyDir | pvc | configMap (default emptyDir)
+#   subPath:     single-file mount key (optional)
+#   size:        PVC size (pvc type, default 100Mi)
+#   accessMode:  PVC access mode (pvc type, default ReadWriteOnce)
+#   defaultMode: file permissions (configMap type, optional)
+#   data:        inline content map (configMap type, optional)
+volumes: {}
+
+healthCheck: {}
+
 resources: {}
 
 nodeSelector: {}
@@ -26,6 +50,5 @@ tolerations: []
 affinity: {}
 
 extraEnv: []
-
 extraVolumes: []
 extraVolumeMounts: []
