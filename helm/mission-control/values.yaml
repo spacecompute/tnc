@@ -1,0 +1,46 @@
+# Default values for the mission-control umbrella chart.
+# This file can be used to override values in the subcharts.
+
+# Example of overriding subchart configurations globally:
+# global:
+#   domain: mission-control.local
+
+jupyter:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: localhost
+        paths:
+          - path: /jupyter
+            pathType: Prefix
+
+openmct:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: localhost
+        paths:
+          - path: /openmct
+            pathType: Prefix
+
+yamcs:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: localhost
+        paths:
+          - path: /yamcs
+            pathType: Prefix
+
+sle:
+  enabled: true
+  # SLE uses raw TCP on port 5100, which standard HTTP Ingress cannot route.
+  # On Docker Desktop, setting this to LoadBalancer will expose it directly at localhost:5100
+  service:
+    type: LoadBalancer

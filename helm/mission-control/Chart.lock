@@ -1,0 +1,15 @@
+dependencies:
+- name: jupyter
+  repository: file://../jupyter
+  version: 0.1.0
+- name: openmct
+  repository: file://../openmct
+  version: 0.1.0
+- name: sle
+  repository: file://../sle
+  version: 0.1.0
+- name: yamcs
+  repository: file://../yamcs
+  version: 0.1.0
+digest: sha256:cfcdd5c227bd46398103f55074f277281f3911cde673687b83a2bb91bdf1439e
+generated: "2026-07-09T14:22:15.611153-04:00"

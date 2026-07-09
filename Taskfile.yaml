@@ -64,45 +64,10 @@ tasks:
         -f containers/sle/Containerfile
         containers/sle
 
-  act:build:
-    desc: Build all images locally via act
-    cmds:
-      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}}
-
-  act:build:yamcs:
-    desc: Build yamcs image locally via act
-    cmds:
-      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:yamcs
-
-  act:build:openmct:
-    desc: Build openmct image locally via act
-    cmds:
-      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:openmct
-
-  act:build:jupyter:
-    desc: Build jupyter image locally via act
-    cmds:
-      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:jupyter
-
-  act:build:sle:
-    desc: Build sle image locally via act
-    cmds:
-      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:sle
-
-  act:build:dry:
-    desc: Dry-run — validate workflow without building
-    cmds:
-      - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --dryrun
-
-  act:graph:
-    desc: Show workflow graph
-    cmds:
-      - act push -W {{.WORKFLOW}} --graph
-
   helm:lint:
     desc: Lint all Helm charts
     cmds:
-      - helm lint helm/yamcs helm/openmct helm/jupyter helm/sle
+      - helm lint helm/yamcs helm/openmct helm/jupyter helm/sle helm/mission-control
 
   helm:lint:yamcs:
     desc: Lint yamcs chart
@@ -124,33 +89,16 @@ tasks:
     cmds:
       - helm lint helm/sle
 
+  helm:deps:
+    desc: Update Helm chart dependencies for umbrella chart
+    cmds:
+      - helm dependency update helm/mission-control
+
   helm:package:
-    desc: Package all Helm charts
-    deps:
-      - task: helm:package:yamcs
-      - task: helm:package:openmct
-      - task: helm:package:jupyter
-      - task: helm:package:sle
-
-  helm:package:yamcs:
-    desc: Package yamcs chart
+    desc: Package mission-control umbrella chart
+    deps: [helm:lint, helm:deps]
     cmds:
-      - helm package helm/yamcs -d dist/
-
-  helm:package:openmct:
-    desc: Package openmct chart
-    cmds:
-      - helm package helm/openmct -d dist/
-
-  helm:package:jupyter:
-    desc: Package jupyter chart
-    cmds:
-      - helm package helm/jupyter -d dist/
-
-  helm:package:sle:
-    desc: Package sle chart
-    cmds:
-      - helm package helm/sle -d dist/
+      - helm package helm/mission-control -d dist/
 
   helm:template:
     desc: Render all chart templates locally
