@@ -5,6 +5,13 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+command: ["/entrypoint.sh"]
+
+entrypoint: |
+  #!/usr/bin/env bash
+  cd /opt/jsle
+  mvn ${MAVEN_HTTPS_PROXY} exec:java -Dmaven.repo.local=/opt/jsle/.m2/repository
+
 env:
   MAVEN_HTTPS_PROXY: ""
   HTTPS_PROXY: ""
@@ -15,6 +22,20 @@ env:
 service:
   type: ClusterIP
   port: 5100
+  additionalPorts: []
+
+# Volumes — each entry supports:
+#   enabled:     bool (default false)
+#   mountPath:   container path (required)
+#   type:        emptyDir | pvc | configMap (default emptyDir)
+#   subPath:     single-file mount key (optional)
+#   size:        PVC size (pvc type, default 100Mi)
+#   accessMode:  PVC access mode (pvc type, default ReadWriteOnce)
+#   defaultMode: file permissions (configMap type, optional)
+#   data:        inline content map (configMap type, optional)
+volumes: {}
+
+healthCheck: {}
 
 resources: {}
 
@@ -23,7 +44,6 @@ tolerations: []
 affinity: {}
 
 extraEnv: []
-
 extraVolumes: []
 extraVolumeMounts: []
 

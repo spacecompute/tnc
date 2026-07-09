@@ -18,23 +18,26 @@ spec:
         - name: sle
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/entrypoint.sh"]
+          command: {{ .Values.command | toJson }}
           ports:
             - name: sle
-              containerPort: 5100
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
+            {{- range .Values.service.additionalPorts }}
+            - name: {{ .name }}
+              containerPort: {{ .port }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
           env:
-            - name: MAVEN_HTTPS_PROXY
-              value: {{ .Values.env.MAVEN_HTTPS_PROXY | quote }}
-            - name: HTTPS_PROXY
-              value: {{ .Values.env.HTTPS_PROXY | quote }}
-            - name: HTTP_PROXY
-              value: {{ .Values.env.HTTP_PROXY | quote }}
-            - name: NO_PROXY
-              value: {{ .Values.env.NO_PROXY | quote }}
-            - name: DEPLOYMENT_ENVIRO
-              value: {{ .Values.env.DEPLOYMENT_ENVIRO | quote }}
+            {{- range $key, $val := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
           {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.healthCheck }}
+          livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.resources }}

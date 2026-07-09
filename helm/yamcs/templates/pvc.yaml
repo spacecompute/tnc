@@ -1,0 +1,17 @@
+{{- range $name, $vol := .Values.volumes }}
+{{- if and $vol.enabled (eq ($vol.type | default "emptyDir") "pvc") }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "yamcs.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "yamcs.labels" $ | nindent 4 }}
+spec:
+  accessModes:
+    - {{ $vol.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ $vol.size | default "100Mi" }}
+---
+{{- end }}
+{{- end }}

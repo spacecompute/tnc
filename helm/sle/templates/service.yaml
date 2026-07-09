@@ -8,8 +8,14 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: sle
+      targetPort: {{ .Values.service.port }}
       protocol: TCP
       name: sle
+    {{- range .Values.service.additionalPorts }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .port }}
+      protocol: {{ .protocol | default "TCP" }}
+    {{- end }}
   selector:
     {{- include "sle.selectorLabels" . | nindent 4 }}

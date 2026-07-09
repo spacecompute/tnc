@@ -5,6 +5,20 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+command: ["/entrypoint.sh"]
+
+entrypoint: |
+  #!/usr/bin/env bash
+  set -e
+  cd /opt/yamcs
+
+  # Register Yamcs plugins
+  mvn ${MAVEN_HTTPS_PROXY} org.yamcs:yamcs-maven-plugin:detect \
+    -Dmaven.repo.local=/opt/yamcs/.m2/repository || true
+
+  mvn ${MAVEN_HTTPS_PROXY} yamcs:run \
+    -Dmaven.repo.local=/opt/yamcs/.m2/repository
+
 env:
   MAVEN_HTTPS_PROXY: ""
   HTTPS_PROXY: ""
@@ -15,15 +29,88 @@ env:
 service:
   type: ClusterIP
   port: 8090
+  additionalPorts:
+    - name: tm-udp
+      port: 10015
+      protocol: UDP
+    - name: tc-udp
+      port: 10025
+      protocol: UDP
 
-resources: {}
+# Volumes — standard Yamcs layout, enabled by default.
+# Missions can override size, type, or disable individual volumes.
+#
+# Supported keys per volume:
+#   enabled:     bool
+#   mountPath:   container path
+#   type:        emptyDir | pvc | configMap
+#   subPath:     single-file mount key (optional)
+#   size:        PVC size (pvc type, default 100Mi)
+#   accessMode:  PVC access mode (pvc type, default ReadWriteOnce)
+#   defaultMode: file permissions (configMap type, optional)
+#   data:        inline content map (configMap type, optional)
+volumes:
+  # PVC volumes — persistent data loaded post-deploy
+  mdb:
+    enabled: true
+    mountPath: /opt/yamcs/src/main/yamcs/mdb
+    type: pvc
+    size: 100Mi
+  etc:
+    enabled: true
+    mountPath: /opt/yamcs/src/main/yamcs/etc
+    type: pvc
+    size: 100Mi
+  incoming:
+    enabled: true
+    mountPath: /opt/yamcs/src/main/yamcs/incoming
+    type: pvc
+    size: 100Mi
+  displays:
+    enabled: true
+    mountPath: /opt/yamcs/src/main/yamcs/displays
+    type: pvc
+    size: 100Mi
+
+  # emptyDir volumes — ephemeral, loaded post-deploy
+  target:
+    enabled: true
+    mountPath: /opt/yamcs/target
+    type: emptyDir
+  scripts:
+    enabled: true
+    mountPath: /opt/yamcs/scripts
+    type: emptyDir
+  functions:
+    enabled: true
+    mountPath: /opt/yamcs/src/main/yamcs/functions
+    type: emptyDir
+  decoders:
+    enabled: true
+    mountPath: /opt/yamcs/src/main/java/com/example/myproject
+    type: emptyDir
+
+healthCheck:
+  httpGet:
+    path: /
+    port: 8090
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 30
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1024Mi"
+  limits:
+    cpu: "2"
+    memory: "2048Mi"
 
 nodeSelector: {}
 tolerations: []
 affinity: {}
 
 extraEnv: []
-
 extraVolumes: []
 extraVolumeMounts: []
 

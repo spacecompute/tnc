@@ -6,8 +6,21 @@ metadata:
     {{- include "jupyter.labels" . | nindent 4 }}
 data:
   entrypoint.sh: |
-    #!/usr/bin/env bash
-    # Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
-    cd /opt/jupyter
-    jupyterhub -f ./jupyterhub_config.py
-    tail -f /dev/null
+    {{- .Values.entrypoint | nindent 4 }}
+---
+{{- range $name, $vol := .Values.volumes }}
+{{- if and $vol.enabled (eq ($vol.type | default "emptyDir") "configMap") $vol.data }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "jupyter.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "jupyter.labels" $ | nindent 4 }}
+data:
+  {{- range $key, $content := $vol.data }}
+  {{ $key }}: |
+    {{- $content | nindent 4 }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}

@@ -18,29 +18,26 @@ spec:
         - name: openmct
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/entrypoint.sh"]
+          command: {{ .Values.command | toJson }}
           ports:
             - name: http
-              containerPort: 9000
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
+            {{- range .Values.service.additionalPorts }}
+            - name: {{ .name }}
+              containerPort: {{ .port }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
           env:
-            - name: MAVEN_HTTPS_PROXY
-              value: {{ .Values.env.MAVEN_HTTPS_PROXY | quote }}
-            - name: HTTPS_PROXY
-              value: {{ .Values.env.HTTPS_PROXY | quote }}
-            - name: HTTP_PROXY
-              value: {{ .Values.env.HTTP_PROXY | quote }}
-            - name: NO_PROXY
-              value: {{ .Values.env.NO_PROXY | quote }}
-            - name: DEPLOYMENT_ENVIRO
-              value: {{ .Values.env.DEPLOYMENT_ENVIRO | quote }}
-            - name: YAMCS_INSTANCE
-              value: {{ .Values.env.YAMCS_INSTANCE | quote }}
-            - name: YAMCS_PROCESSOR
-              value: {{ .Values.env.YAMCS_PROCESSOR | quote }}
-            - name: YAMCS_FOLDER
-              value: {{ .Values.env.YAMCS_FOLDER | quote }}
+            {{- range $key, $val := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
           {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.healthCheck }}
+          livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.resources }}
@@ -51,6 +48,15 @@ spec:
             - name: entrypoint
               mountPath: /entrypoint.sh
               subPath: entrypoint.sh
+            {{- range $name, $vol := .Values.volumes }}
+            {{- if $vol.enabled }}
+            - name: {{ $name }}
+              mountPath: {{ $vol.mountPath }}
+              {{- if $vol.subPath }}
+              subPath: {{ $vol.subPath }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
           {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -59,6 +65,30 @@ spec:
           configMap:
             name: {{ include "openmct.fullname" . }}-entrypoint
             defaultMode: 0755
+        {{- range $name, $vol := .Values.volumes }}
+        {{- if $vol.enabled }}
+        {{- if eq ($vol.type | default "emptyDir") "emptyDir" }}
+        - name: {{ $name }}
+          emptyDir: {}
+        {{- else if eq $vol.type "pvc" }}
+        - name: {{ $name }}
+          persistentVolumeClaim:
+            claimName: {{ include "openmct.fullname" $ }}-{{ $name }}
+        {{- else if eq $vol.type "configMap" }}
+        - name: {{ $name }}
+          configMap:
+            name: {{ include "openmct.fullname" $ }}-{{ $name }}
+            {{- if $vol.defaultMode }}
+            defaultMode: {{ $vol.defaultMode }}
+            {{- end }}
+            {{- if $vol.subPath }}
+            items:
+              - key: {{ $vol.subPath }}
+                path: {{ $vol.subPath }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
       {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
