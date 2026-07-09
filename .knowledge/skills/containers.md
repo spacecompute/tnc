@@ -1,7 +1,7 @@
 ---
 name: containers
 description: Build and manage base container images for mission control services. Multi-arch builds via act, Containerfile conventions, entrypoint patterns.
-argument-hint: [build | build:yamcs | build:openmct | build:jupyter | build:sle | dry | status]
+argument-hint: [build | build:yamcs | build:openmct | build:jupyter | build:sle | act | dry | status]
 ---
 
 # Container Image Management
@@ -10,15 +10,15 @@ Build and manage the base container images. Based on `$ARGUMENTS`. Default to `s
 
 ## Commands
 
-### `build` — Build all container images
+### `build` — Build all container images locally
 
 ```bash
 task build
 ```
 
-Runs the CI workflow locally via [act](https://github.com/nektos/act), building all four images.
+Builds all four images in parallel using the local container runtime (`CONTAINER_BIN`, defaults to `docker`).
 
-### `build:<service>` — Build one image
+### `build:<service>` — Build one image locally
 
 ```bash
 task build:yamcs
@@ -27,10 +27,18 @@ task build:jupyter
 task build:sle
 ```
 
+### `act` — Build all images via act (CI workflow)
+
+```bash
+task act:build
+```
+
+Runs the CI workflow locally via [act](https://github.com/nektos/act).
+
 ### `dry` — Validate workflow without building
 
 ```bash
-task build:dry
+task act:build:dry
 ```
 
 Dry-run of the CI workflow — validates syntax and job structure without actually building images.
@@ -38,7 +46,7 @@ Dry-run of the CI workflow — validates syntax and job structure without actual
 ### `status` — Show workflow graph
 
 ```bash
-task graph
+task act:graph
 ```
 
 ## Images

@@ -25,8 +25,9 @@ These are base images. Mission-specific repos extend them with XTCE databases, d
 ## Building locally
 
 ```bash
-task build              # build all images
-task build:yamcs        # build one image
-task build:dry          # validate workflow without building
-task graph              # show workflow DAG
+task build              # build all images locally
+task build:yamcs        # build one image locally
+task act:build          # build all images via act (CI workflow)
+task act:build:dry      # validate workflow without building
+task act:graph          # show workflow DAG
 ```

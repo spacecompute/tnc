@@ -14,9 +14,10 @@ Base container images and Helm charts for spacecraft mission control.
 ## Common Tasks
 
 ```
-task build              # build all container images via act
-task build:yamcs        # build one image
-task build:dry          # validate workflow without building
+task build              # build all container images locally
+task build:yamcs        # build one image locally
+task act:build          # build all images via act (CI workflow)
+task act:build:dry      # validate workflow without building
 task helm:lint          # lint all Helm charts
 task helm:template      # render all chart templates locally
 ```

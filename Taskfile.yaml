@@ -1,6 +1,10 @@
 version: '3'
 
 vars:
+  CONTAINER_BIN: docker
+  IMAGE_PREFIX:
+    sh: echo "ghcr.io/$(git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
+  # act — run GitHub Actions locally: https://github.com/nektos/act
   WORKFLOW: .github/workflows/build-images.yaml
   ACT_IMAGE: catthehacker/ubuntu:act-latest
   ACT_FLAGS: >-
@@ -16,36 +20,80 @@ tasks:
       - task --list
 
   build:
+    desc: Build all images locally
+    deps:
+      - task: build:yamcs
+      - task: build:openmct
+      - task: build:jupyter
+      - task: build:sle
+
+  build:yamcs:
+    desc: Build yamcs image
+    cmds:
+      - >-
+        {{.CONTAINER_BIN}} build
+        -t {{.IMAGE_PREFIX}}/yamcs:latest
+        -f containers/yamcs/Containerfile
+        containers/yamcs
+
+  build:openmct:
+    desc: Build openmct image
+    cmds:
+      - >-
+        {{.CONTAINER_BIN}} build
+        -t {{.IMAGE_PREFIX}}/openmct:latest
+        -f containers/openmct/Containerfile
+        containers/openmct
+
+  build:jupyter:
+    desc: Build jupyter image
+    cmds:
+      - >-
+        {{.CONTAINER_BIN}} build
+        -t {{.IMAGE_PREFIX}}/jupyter:latest
+        -f containers/jupyter/Containerfile
+        containers/jupyter
+
+  build:sle:
+    desc: Build sle image
+    cmds:
+      - >-
+        {{.CONTAINER_BIN}} build
+        -t {{.IMAGE_PREFIX}}/sle:latest
+        -f containers/sle/Containerfile
+        containers/sle
+
+  act:build:
     desc: Build all images locally via act
     cmds:
       - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}}
 
-  build:yamcs:
-    desc: Build yamcs image locally
+  act:build:yamcs:
+    desc: Build yamcs image locally via act
     cmds:
       - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:yamcs
 
-  build:openmct:
-    desc: Build openmct image locally
+  act:build:openmct:
+    desc: Build openmct image locally via act
     cmds:
       - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:openmct
 
-  build:jupyter:
-    desc: Build jupyter image locally
+  act:build:jupyter:
+    desc: Build jupyter image locally via act
     cmds:
       - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:jupyter
 
-  build:sle:
-    desc: Build sle image locally
+  act:build:sle:
+    desc: Build sle image locally via act
     cmds:
       - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --matrix image:sle
 
-  build:dry:
+  act:build:dry:
     desc: Dry-run — validate workflow without building
     cmds:
       - act push -W {{.WORKFLOW}} -j build {{.ACT_FLAGS}} --dryrun
 
-  graph:
+  act:graph:
     desc: Show workflow graph
     cmds:
       - act push -W {{.WORKFLOW}} --graph

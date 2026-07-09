@@ -16,12 +16,14 @@ Container images and Helm charts for spacecraft mission control systems.
 
 ## Local development
 
-Requires [Task](https://taskfile.dev), [act](https://github.com/nektos/act), and [Helm](https://helm.sh).
+Requires [Task](https://taskfile.dev), a container runtime (Docker/Podman), and [Helm](https://helm.sh).
+Optionally [act](https://github.com/nektos/act) for running the CI workflow locally.
 
 ```bash
-task build              # build all container images via act
-task build:yamcs        # build one image
-task build:dry          # validate workflow without building
+task build              # build all container images locally
+task build:yamcs        # build one image locally
+task act:build          # build all images via act (CI workflow)
+task act:build:dry      # validate workflow without building
 task helm:lint          # lint all Helm charts
 task helm:template      # render all chart templates locally
 ```
