@@ -14,8 +14,13 @@ spec:
       labels:
         {{- include "jupyter.selectorLabels" . | nindent 8 }}
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: jupyter
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: {{ .Values.command | toJson }}
