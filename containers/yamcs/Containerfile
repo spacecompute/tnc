@@ -68,4 +68,21 @@ USER ${SERVICE_UID}:${SERVICE_GID}
 # Default entrypoint (missions override via volume mount)
 COPY entrypoint.sh /entrypoint.sh
 
+#--- OCI IMAGE LABELS (set at build time to avoid cache busting earlier layers)
+ARG OCI_SOURCE=""
+ARG OCI_REVISION=""
+ARG OCI_CREATED=""
+ARG OCI_TITLE="yamcs"
+ARG OCI_VENDOR=""
+ARG BUILD_HOST=""
+
+ENV BUILD_HOST=${BUILD_HOST}
+
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
+      org.opencontainers.image.revision="${OCI_REVISION}" \
+      org.opencontainers.image.created="${OCI_CREATED}" \
+      org.opencontainers.image.title="${OCI_TITLE}" \
+      org.opencontainers.image.vendor="${OCI_VENDOR}" \
+      org.opencontainers.image.build.host="${BUILD_HOST}"
+
 CMD ["/entrypoint.sh"]
