@@ -14,9 +14,9 @@ Each Containerfile now creates a dedicated service user with configurable UID/GI
 
 `containers/jupyter/jupyterhub_config.py` sets `authenticator_class = 'dummy'` with `password = 'password'`. This is baked into the image. Even though the comment says "development", the image ships to GHCR and can be deployed as-is.
 
-### C3. JupyterHub notebooks run as root
+### ~~C3. JupyterHub notebooks run as root~~ (RESOLVED)
 
-`containers/jupyter/jupyterhub_config.py` passes `--allow-root` to spawned notebooks. Combined with no `USER` directive, all user notebook code executes as root.
+`containers/jupyter/jupyterhub_config.py` passes `--allow-root` to spawned notebooks. Resolved by C1: the Containerfile sets `USER 10003:10003`, so the spawner is never root and `--allow-root` is a no-op. The flag can be removed as cleanup.
 
 ## High
 
@@ -92,7 +92,7 @@ Only `dist/` and `charts/` are excluded. No exclusions for `.env`, `*.pem`, `*.k
 
 ### L2. `tail -f /dev/null` in entrypoints
 
-`containers/openmct/entrypoint.sh` and `containers/jupyter/entrypoint.sh` keep the container alive after the main process exits. This masks crashes and leaves a root shell available via `kubectl exec`.
+`containers/openmct/entrypoint.sh` and `containers/jupyter/entrypoint.sh` keep the container alive after the main process exits. This masks crashes and leaves a shell available via `kubectl exec` (as the service user, not root, since C1 was resolved).
 
 ### L3. No image scanning in CI
 
@@ -111,4 +111,4 @@ No Trivy, Grype, or Snyk step in `build-images.yaml`. Vulnerabilities in base im
 | Medium | 7 | No NetworkPolicy, env credential leak, unpinned deps, seccomp |
 | Low | 4 | Dev tools in prod, masked crashes, no image scanning |
 
-C1, H1, and H6 have been resolved. The remaining highest-impact fix is **C2**: replacing the dummy JupyterHub authenticator with a real one.
+C1, C3, H1, and H6 have been resolved. The remaining highest-impact fix is **C2**: replacing the dummy JupyterHub authenticator with a real one.
