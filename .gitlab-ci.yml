@@ -1,0 +1,181 @@
+# GitLab CI/CD pipeline — mirrors .github/workflows/build-images.yaml
+# and .github/workflows/publish-charts.yaml
+#
+# Runners must have Docker executor with privileged mode for DinD + QEMU.
+# GitLab.com shared runners support this by default.
+#
+# Weekly rebuilds: configure a Pipeline Schedule in CI/CD > Schedules
+# targeting the default branch.
+#
+# Registry: defaults to GitLab Container Registry ($CI_REGISTRY_IMAGE).
+# Override IMAGE_PREFIX / CHART_PREFIX CI/CD variables for external
+# registries (GHCR, Harbor, etc).
+
+stages:
+  - build
+  - manifest
+  - lint
+  - publish
+
+variables:
+  IMAGE_PREFIX: ${CI_REGISTRY_IMAGE}
+  CHART_PREFIX: oci://${CI_REGISTRY_IMAGE}/charts
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Container Images  (build-images.yaml equivalent)
+# ═══════════════════════════════════════════════════════════════════════
+
+.dind:
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+
+.container-rules:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - containers/**/*
+        - .gitlab-ci.yml
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - containers/**/*
+        - .gitlab-ci.yml
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+build:
+  extends:
+    - .dind
+    - .container-rules
+  stage: build
+  before_script:
+    - apk add --no-cache jq
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker run --privileged --rm tonistiigi/binfmt --install all
+    - docker buildx create --use --name multiarch --driver docker-container
+  parallel:
+    matrix:
+      - IMAGE: [yamcs, openmct, jupyter, sle]
+        PLATFORM:
+          - linux/amd64
+          - linux/arm64
+  script:
+    - PLATFORM_SLUG=$(echo "$PLATFORM" | tr '/' '-')
+    - |
+      PUSH="false"
+      if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
+        PUSH="true"
+      fi
+    - |
+      docker buildx build \
+        --platform "$PLATFORM" \
+        --file "containers/${IMAGE}/Containerfile" \
+        --label "org.opencontainers.image.source=${CI_PROJECT_URL}" \
+        --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}" \
+        --cache-from "type=registry,ref=${IMAGE_PREFIX}/${IMAGE}:buildcache-${PLATFORM_SLUG}" \
+        --cache-to   "type=registry,ref=${IMAGE_PREFIX}/${IMAGE}:buildcache-${PLATFORM_SLUG},mode=max" \
+        --output "type=image,name=${IMAGE_PREFIX}/${IMAGE},push-by-digest=true,name-canonical=true,push=${PUSH}" \
+        --metadata-file /tmp/metadata.json \
+        "containers/${IMAGE}"
+    - |
+      if [ "$PUSH" = "true" ]; then
+        DIGEST=$(jq -r '."containerimage.digest"' /tmp/metadata.json)
+        mkdir -p digests
+        echo "$DIGEST" > "digests/${IMAGE}-${PLATFORM_SLUG}.digest"
+      fi
+  artifacts:
+    paths:
+      - digests/
+    expire_in: 1 hour
+
+manifest:
+  extends: .dind
+  stage: manifest
+  needs:
+    - job: build
+      artifacts: true
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker buildx create --use --name multiarch --driver docker-container
+  parallel:
+    matrix:
+      - IMAGE: [yamcs, openmct, jupyter, sle]
+  script:
+    - AMD64=$(cat "digests/${IMAGE}-linux-amd64.digest")
+    - ARM64=$(cat "digests/${IMAGE}-linux-arm64.digest")
+    - |
+      docker buildx imagetools create \
+        -t "${IMAGE_PREFIX}/${IMAGE}:latest" \
+        -t "${IMAGE_PREFIX}/${IMAGE}:${CI_COMMIT_SHORT_SHA}" \
+        "${IMAGE_PREFIX}/${IMAGE}@${AMD64}" \
+        "${IMAGE_PREFIX}/${IMAGE}@${ARM64}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - containers/**/*
+        - .gitlab-ci.yml
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Helm Charts  (publish-charts.yaml equivalent)
+# ═══════════════════════════════════════════════════════════════════════
+
+.helm:
+  image:
+    name: alpine/helm:latest
+    entrypoint: [""]
+
+.chart-rules:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - helm/**/*
+        - .gitlab-ci.yml
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - helm/**/*
+        - .gitlab-ci.yml
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+lint:
+  extends:
+    - .helm
+    - .chart-rules
+  stage: lint
+  needs: []
+  parallel:
+    matrix:
+      - CHART: [yamcs, openmct, jupyter, sle, mission-control]
+  script:
+    - |
+      if [ "$CHART" = "mission-control" ]; then
+        helm dependency build "helm/${CHART}"
+      fi
+    - helm lint "helm/${CHART}"
+
+publish:
+  extends: .helm
+  stage: publish
+  needs:
+    - job: lint
+  before_script:
+    - helm registry login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  parallel:
+    matrix:
+      - CHART: [yamcs, openmct, jupyter, sle, mission-control]
+  script:
+    - |
+      if [ "$CHART" = "mission-control" ]; then
+        helm dependency build "helm/${CHART}"
+      fi
+    - helm package "helm/${CHART}"
+    - helm push ${CHART}-*.tgz "$CHART_PREFIX"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - helm/**/*
+        - .gitlab-ci.yml
+    - if: $CI_PIPELINE_SOURCE == "web"
