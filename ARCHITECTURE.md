@@ -31,11 +31,14 @@ COPY entrypoint.sh /entrypoint.sh
 CMD ["/entrypoint.sh"]
 ```
 
-Each `entrypoint.sh` includes an explicit `cd /opt/<service>` because `WORKDIR` is not guaranteed when Kubernetes overrides the command via Helm ConfigMap:
+Each Containerfile sets `USER ${SERVICE_UID}:${SERVICE_GID}` as the default (non-root). Each `entrypoint.sh` includes a `gosu` guard: when Docker Compose sets `user: "0:0"` to fix bind-mount ownership, the entrypoint drops back to the service user via `gosu`; when already non-root (default `USER` or Kubernetes `runAsUser`), it runs directly. The explicit `cd` ensures correctness when `WORKDIR` is overridden via Helm ConfigMap:
 
 ```bash
 #!/usr/bin/env bash
-# Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
+if [ "$(id -u)" = "0" ]; then
+    chown -R "${SERVICE_UID}:${SERVICE_GID}" /opt/<service> 2>/dev/null || true
+    exec gosu "${SERVICE_UID}:${SERVICE_GID}" "$0" "$@"
+fi
 cd /opt/<service>
 <start command>
 ```
@@ -100,6 +103,7 @@ Each chart includes a ConfigMap that mirrors the container's `entrypoint.sh`. Th
 |----------|---------|---------|
 | `build-images.yaml` | Push to `main` (containers/ changes) | Build and push multi-arch container images |
 | `publish-charts.yaml` | Push to `main` (helm/ changes) | Lint and publish Helm charts as OCI artifacts |
+| `.gitlab-ci.yml` | Push/MR (mirrors both GitHub workflows) | GitLab CI/CD equivalent of both workflows above |
 
 ## Extension Model
 

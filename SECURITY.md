@@ -6,7 +6,7 @@ Findings from a security review of the base container images, Helm charts, CI wo
 
 ### ~~C1. All containers run as root~~ (RESOLVED)
 
-Each Containerfile now creates a dedicated service user with configurable UID/GID (`ARG SERVICE_UID/SERVICE_GID`) and runs as that user via `USER` directive. Helm charts enforce `podSecurityContext` with `runAsNonRoot: true`.
+Each Containerfile now creates a dedicated service user with configurable UID/GID (`ARG SERVICE_UID/SERVICE_GID`) and sets `USER` to that service user. Entrypoints include a `gosu` guard: when Docker Compose overrides `user: "0:0"` to fix bind-mount ownership, the entrypoint drops back to the service user via `gosu`. In Kubernetes, `podSecurityContext` with `runAsUser` and `runAsNonRoot: true` enforces non-root directly, bypassing the gosu path.
 
 - yamcs (10001), openmct (10002), jupyter (10003), jsle (10004)
 
