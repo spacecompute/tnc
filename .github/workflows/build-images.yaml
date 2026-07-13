@@ -150,6 +150,14 @@ jobs:
           sarif_file: trivy-results.sarif
           category: trivy-${{ matrix.image }}-${{ matrix.platform_slug }}
 
+      - name: Upload Trivy report as artifact
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.image }}-${{ matrix.platform_slug }}
+          path: trivy-results.sarif
+          retention-days: 30
+
   merge:
     if: github.event_name != 'pull_request'
     needs: [build, scan]
