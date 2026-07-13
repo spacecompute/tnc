@@ -9,6 +9,7 @@ command: ["/entrypoint.sh"]
 
 entrypoint: |
   #!/usr/bin/env bash
+  [ -n "${SHARED_GID}" ] && umask 0002
   cd /opt/jsle
   mvn ${MAVEN_HTTPS_PROXY} exec:java -Dmaven.repo.local=/opt/jsle/.m2/repository
 

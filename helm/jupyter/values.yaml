@@ -9,6 +9,7 @@ command: ["/entrypoint.sh"]
 
 entrypoint: |
   #!/usr/bin/env bash
+  [ -n "${SHARED_GID}" ] && umask 0002
   cd /opt/jupyter
   jupyterhub -f ./jupyterhub_config.py
   tail -f /dev/null

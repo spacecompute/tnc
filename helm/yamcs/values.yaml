@@ -10,6 +10,7 @@ command: ["/entrypoint.sh"]
 entrypoint: |
   #!/usr/bin/env bash
   set -e
+  [ -n "${SHARED_GID}" ] && umask 0002
   cd /opt/yamcs
 
   # Wait for mission data (MDB, pom.xml, etc/ copied post-deploy via kubectl cp)
