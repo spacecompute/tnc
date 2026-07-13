@@ -96,7 +96,7 @@ Only `dist/` and `charts/` are excluded. No exclusions for `.env`, `*.pem`, `*.k
 
 ### ~~L3. No image scanning in CI~~ (Resolved)
 
-A Trivy scan job now runs between `build` and `merge` in `build-images.yaml`. Each image is scanned by digest before being tagged as `latest`, with SARIF results uploaded to GitHub Security.
+A Trivy scan job now runs between `build` and `merge`/`manifest` in both `build-images.yaml` (GitHub Actions) and `.gitlab-ci.yml`. Each image is scanned by digest on both amd64 and arm64 before being tagged as `latest`. GitHub results go to the Security tab via SARIF; GitLab results surface in the MR security widget and Vulnerability Report.
 
 ### L4. Weekly scheduled rebuild without notifications
 

@@ -19,6 +19,10 @@ if [ "$(id -u)" = "0" ]; then
     exec gosu "${SERVICE_UID}:${SERVICE_GID}" "$0" "$@"
 fi
 
+# Shared volumes: relax umask so new files are group-writable.
+# Only affects this service process — root setup phase keeps 0022.
+[ -n "${SHARED_GID}" ] && umask 0002
+
 # Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
 cd /opt/jsle
 mvn ${MAVEN_HTTPS_PROXY} exec:java -Dmaven.repo.local=/opt/jsle/.m2/repository

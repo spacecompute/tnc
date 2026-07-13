@@ -26,6 +26,10 @@ if [ "$(id -u)" = "0" ]; then
     exec gosu "${SERVICE_UID}:${SERVICE_GID}" "$0" "$@"
 fi
 
+# Shared volumes: relax umask so new files are group-writable.
+# Only affects this service process — root setup phase keeps 0022.
+[ -n "${SHARED_GID}" ] && umask 0002
+
 # Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
 cd /opt/yamcs
 mvn ${MAVEN_HTTPS_PROXY} yamcs:run -Dmaven.repo.local=/opt/yamcs/.m2/repository
