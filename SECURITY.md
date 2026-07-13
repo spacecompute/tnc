@@ -94,9 +94,9 @@ Only `dist/` and `charts/` are excluded. No exclusions for `.env`, `*.pem`, `*.k
 
 `containers/openmct/entrypoint.sh` and `containers/jupyter/entrypoint.sh` keep the container alive after the main process exits. This masks crashes and leaves a shell available via `kubectl exec` (as the service user, not root, since C1 was resolved).
 
-### L3. No image scanning in CI
+### ~~L3. No image scanning in CI~~ (Resolved)
 
-No Trivy, Grype, or Snyk step in `build-images.yaml`. Vulnerabilities in base images and dependencies are not caught before publishing.
+A Trivy scan job now runs between `build` and `merge` in `build-images.yaml`. Each image is scanned by digest before being tagged as `latest`, with SARIF results uploaded to GitHub Security.
 
 ### L4. Weekly scheduled rebuild without notifications
 
@@ -109,6 +109,6 @@ No Trivy, Grype, or Snyk step in `build-images.yaml`. Vulnerabilities in base im
 | Critical | 3 | Root containers, hardcoded credentials, root notebooks |
 | High | 6 | sudo, unpinned images/sources, curl\|bash, missing pod security |
 | Medium | 7 | No NetworkPolicy, env credential leak, unpinned deps, seccomp |
-| Low | 4 | Dev tools in prod, masked crashes, no image scanning |
+| Low | 3 | Dev tools in prod, masked crashes |
 
-C1, C3, H1, and H6 have been resolved. The remaining highest-impact fix is **C2**: replacing the dummy JupyterHub authenticator with a real one.
+C1, C3, H1, H6, and L3 have been resolved. The remaining highest-impact fix is **C2**: replacing the dummy JupyterHub authenticator with a real one.
