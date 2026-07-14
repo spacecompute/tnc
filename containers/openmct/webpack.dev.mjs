@@ -29,6 +29,13 @@ import commonConfig from "./webpack.common.mjs";
 // Replicate __dirname functionality for ES modules
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Yamcs connection — overridden via environment variables in Helm / Docker Compose
+const yamcsHost = process.env.YAMCS_HOST || "yamcs";
+const yamcsPort = process.env.YAMCS_HOST_PORT || "8090";
+const yamcsInstance = process.env.YAMCS_INSTANCE || "myproject";
+const yamcsProcessor = process.env.YAMCS_PROCESSOR || "realtime";
+const yamcsFolder = process.env.YAMCS_FOLDER || "myproject";
+
 /** @type {import('webpack').Configuration} */
 const devConfig = {
   mode: "development",
@@ -39,9 +46,9 @@ const devConfig = {
   },
   plugins: [
     new webpack.EnvironmentPlugin({
-      YAMCS_INSTANCE: "myproject",
-      YAMCS_PROCESSOR: "realtime",
-      YAMCS_FOLDER: "myproject",
+      YAMCS_INSTANCE: yamcsInstance,
+      YAMCS_PROCESSOR: yamcsProcessor,
+      YAMCS_FOLDER: yamcsFolder,
     }),
   ],
   devServer: {
@@ -59,14 +66,14 @@ const devConfig = {
     proxy: [
       {
         context: ["/yamcs-proxy/"],
-        target: "http://yamcs:8090/",
+        target: `http://${yamcsHost}:${yamcsPort}/`,
         secure: false,
         changeOrigin: true,
         pathRewrite: { "^/yamcs-proxy/": "" },
       },
       {
         context: ["/yamcs-proxy-ws/"],
-        target: "ws://yamcs:8090/api/websocket",
+        target: `ws://${yamcsHost}:${yamcsPort}/api/websocket`,
         secure: false,
         changeOrigin: true,
         ws: true,

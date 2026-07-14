@@ -1,15 +1,36 @@
 FROM quay.io/jupyterhub/jupyterhub:5
 
+#--- PROXY CONFIG (if needed)
+ARG MAVEN_HTTPS_PROXY
+ARG HTTPS_PROXY
+ARG HTTP_PROXY
+ARG NO_PROXY
+ARG DEPLOYMENT_ENVIRO
+
+ENV MAVEN_HTTPS_PROXY=${MAVEN_HTTPS_PROXY}
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV NO_PROXY=${NO_PROXY}
+ENV DEPLOYMENT_ENVIRO=${DEPLOYMENT_ENVIRO}
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        netcat-traditional netcat-openbsd iputils-ping \
+        git jq tmux tree vim less curl wget ca-certificates tar gzip gosu acl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # System runtimes and dev libraries for additional kernels
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libzmq3-dev libffi-dev libcurl4-openssl-dev libssl-dev build-essential \
-    ruby ruby-dev \
-    perl cpanminus \
-    gnuplot ghostscript \
-    r-base r-base-dev \
-    octave \
-    gosu acl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libzmq3-dev libffi-dev libcurl4-openssl-dev libssl-dev build-essential \
+        ruby ruby-dev \
+        perl cpanminus \
+        gnuplot ghostscript \
+        r-base r-base-dev \
+        octave && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Pip-installable kernel packages
 RUN pip install --no-cache-dir \
@@ -52,8 +73,7 @@ RUN if [ -f /tmp/requirements.txt ]; then \
 
 WORKDIR /opt/jupyter
 
-# Default entrypoint and config (missions override via volume mount)
-COPY entrypoint.sh /entrypoint.sh
+# Default config (missions override via volume mount)
 COPY jupyterhub_config.py /opt/jupyter/jupyterhub_config.py
 
 #--- SHARED GROUP (cross-service volume access; name from mission, GID always 10000)
@@ -80,7 +100,11 @@ RUN groupadd -r -g ${SERVICE_GID} jupyter && \
     mkdir -p /opt/jupyter /srv/procedures /srv/lib && \
     chown -R jupyter:jupyter /opt/jupyter /srv/procedures /srv/lib
 
+ENV HOME=/opt/jupyter
 USER ${SERVICE_UID}:${SERVICE_GID}
+
+# Default entrypoint (missions override via volume mount)
+COPY entrypoint.sh /entrypoint.sh
 
 #--- OCI IMAGE LABELS (set at build time to avoid cache busting earlier layers)
 ARG OCI_SOURCE=""

@@ -22,6 +22,8 @@ env:
   HTTP_PROXY: ""
   NO_PROXY: ""
   DEPLOYMENT_ENVIRO: ""
+  YAMCS_HOST: yamcs
+  YAMCS_HOST_PORT: "8090"
   YAMCS_INSTANCE: myproject
   YAMCS_PROCESSOR: realtime
   YAMCS_FOLDER: myproject

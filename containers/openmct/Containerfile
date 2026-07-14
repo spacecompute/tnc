@@ -13,15 +13,12 @@ ENV HTTP_PROXY=${HTTP_PROXY}
 ENV NO_PROXY=${NO_PROXY}
 ENV DEPLOYMENT_ENVIRO=${DEPLOYMENT_ENVIRO}
 
-# Install dependencies
 RUN apt-get update && \
-    apt-get -y install \
-        git curl gosu acl && \
+    apt-get install -y --no-install-recommends \
+        netcat-traditional netcat-openbsd iputils-ping \
+        git jq tmux tree vim less curl wget ca-certificates gosu acl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-# Set working directory
-WORKDIR /opt
 
 # Install nvm and node
 ENV NVM_VERSION=v0.40.1
@@ -33,12 +30,11 @@ ENV NODE_VERSION=v24.15.0
 ENV NODE_PATH=$NVM_DIR/versions/node/${NODE_VERSION}/bin
 ENV PATH=${NVM_DIR}:${NODE_PATH}:${PATH}
 
-# Install nvm and node
 WORKDIR /opt
 RUN curl -o- ${NVM_URL} | bash
 RUN . ${NVM_DIR}/nvm.sh && nvm install ${NODE_VERSION}
 
-# Clone openmct-yamcs repo
+# Clone and build openmct-yamcs
 ARG GIT_URL=https://github.com/akhenry/openmct-yamcs.git
 ARG GIT_COMMIT=master
 
@@ -47,22 +43,12 @@ ENV GIT_COMMIT=${GIT_COMMIT}
 
 RUN git clone --recurse-submodules -b ${GIT_COMMIT} -j2 ${GIT_URL} openmct
 
-# Set working directory to the cloned repo
 WORKDIR /opt/openmct
 
-# Install dependencies and build openmct-yamcs
 RUN ${NODE_PATH}/npm install -loglevel verbose
 RUN ${NODE_PATH}/npm run build:example:master -loglevel verbose
 
-# Install utilities
-RUN apt-get update && \
-    apt-get -y install \
-        iputils-ping vim netcat-traditional tmux tree && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Default entrypoint, index.js, and webpack config (missions override via volume mount)
-COPY entrypoint.sh /entrypoint.sh
+# Default config files (missions override via volume mount)
 COPY index.js /opt/openmct/example/index.js
 COPY webpack.dev.mjs /opt/openmct/.webpack/webpack.dev.mjs
 
@@ -90,7 +76,11 @@ RUN groupadd -r -g ${SERVICE_GID} openmct && \
     mkdir -p /opt/openmct/example/displays && \
     chown -R openmct:openmct /opt/openmct /opt/nvm
 
+ENV HOME=/opt/openmct
 USER ${SERVICE_UID}:${SERVICE_GID}
+
+# Default entrypoint (missions override via volume mount)
+COPY entrypoint.sh /entrypoint.sh
 
 #--- OCI IMAGE LABELS (set at build time to avoid cache busting earlier layers)
 ARG OCI_SOURCE=""
