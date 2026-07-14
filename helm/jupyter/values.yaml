@@ -43,7 +43,6 @@ podSecurityContext:
   runAsGroup: 10003
   fsGroup: 10003
   supplementalGroups: [10000]
-  runAsNonRoot: true
 
 healthCheck:
   httpGet:
@@ -65,6 +64,7 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
+initContainers: []
 extraEnv: []
 extraVolumes: []
 extraVolumeMounts: []

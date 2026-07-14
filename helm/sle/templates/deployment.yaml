@@ -19,9 +19,14 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: sle
           securityContext:
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]

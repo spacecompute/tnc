@@ -52,6 +52,7 @@ Every chart exposes these values for mission-specific customization:
 | `env.*` | Proxy and deployment environment variables (see below) |
 | `extraEnv` | Inject additional environment variables |
 | `extraVolumes` / `extraVolumeMounts` | Mount XTCE databases, procedures, configs |
+| `initContainers` | Run setup containers before the main service (e.g., volume permissions) |
 | `resources` | Set CPU/memory requests and limits |
 | `nodeSelector` / `tolerations` / `affinity` | Control pod scheduling |
 

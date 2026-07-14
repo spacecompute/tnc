@@ -50,9 +50,9 @@ All Containerfiles default to `GIT_COMMIT=master`. Cloning `master` means builds
 
 All four Helm deployment templates allow the container to write anywhere on its filesystem. Writable root filesystems let an attacker drop binaries, modify configs, or persist changes.
 
-### ~~H6. No `runAsNonRoot: true` enforcement at pod level~~ (RESOLVED)
+### ~~H6. No `runAsNonRoot: true` enforcement~~ (RESOLVED)
 
-All Helm values.yaml now include `podSecurityContext` with `runAsUser`, `runAsGroup`, `fsGroup`, and `runAsNonRoot: true`. Deployment templates wire this via `{{- with .Values.podSecurityContext }}`.
+All deployment templates enforce `runAsNonRoot: true` at the container level in each main container's `securityContext`. Pod-level `podSecurityContext` sets `runAsUser`, `runAsGroup`, `fsGroup`, and `supplementalGroups`. The `runAsNonRoot` constraint is at container level so that `initContainers` (e.g., volume-permissions) can run as root when needed.
 
 ## Medium
 
