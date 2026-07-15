@@ -104,6 +104,10 @@ volumes:
     enabled: true
     mountPath: /opt/yamcs/src/main/java/com/example/myproject
     type: emptyDir
+  log:
+    enabled: true
+    mountPath: /opt/yamcs/log
+    type: emptyDir
 
 podSecurityContext:
   runAsUser: 10001

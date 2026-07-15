@@ -70,6 +70,7 @@ const devConfig = {
         secure: false,
         changeOrigin: true,
         pathRewrite: { "^/yamcs-proxy/": "" },
+        headers: { "X-Auth-Auid": "admin" },
       },
       {
         context: ["/yamcs-proxy-ws/"],
@@ -78,6 +79,7 @@ const devConfig = {
         changeOrigin: true,
         ws: true,
         pathRewrite: { "^/yamcs-proxy-ws/": "" },
+        headers: { "X-Auth-Auid": "admin" },
       },
     ],
   },
