@@ -172,6 +172,10 @@ jobs:
         image: [yamcs, openmct, jupyter, sle]
 
     steps:
+      - name: Generate timestamp
+        id: time
+        run: echo "timestamp=$(date -u +'%Y.%j.%H%M%S')" >> "$GITHUB_OUTPUT"
+
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
@@ -193,6 +197,7 @@ jobs:
           images: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.time.outputs.timestamp }}
 
       - name: Create manifest list and push
         working-directory: /tmp/digests

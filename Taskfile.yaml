@@ -3,6 +3,8 @@ version: '3'
 vars:
   CONTAINER_BIN: docker
   REGISTRY_HOST: ghcr.io
+  VERSION_TIMESTAMP:
+    sh: date -u +'%Y.%j.%H%M%S'
   IMAGE_PREFIX:
     sh: echo "{{.REGISTRY_HOST}}/$(git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
   # act — run GitHub Actions locally: https://github.com/nektos/act
@@ -34,6 +36,7 @@ tasks:
       - >-
         {{.CONTAINER_BIN}} build
         -t {{.IMAGE_PREFIX}}/yamcs:latest
+        -t {{.IMAGE_PREFIX}}/yamcs:{{.VERSION_TIMESTAMP}}
         -f containers/yamcs/Containerfile
         containers/yamcs
 
@@ -43,6 +46,7 @@ tasks:
       - >-
         {{.CONTAINER_BIN}} build
         -t {{.IMAGE_PREFIX}}/openmct:latest
+        -t {{.IMAGE_PREFIX}}/openmct:{{.VERSION_TIMESTAMP}}
         -f containers/openmct/Containerfile
         containers/openmct
 
@@ -52,6 +56,7 @@ tasks:
       - >-
         {{.CONTAINER_BIN}} build
         -t {{.IMAGE_PREFIX}}/jupyter:latest
+        -t {{.IMAGE_PREFIX}}/jupyter:{{.VERSION_TIMESTAMP}}
         -f containers/jupyter/Containerfile
         containers/jupyter
 
@@ -61,6 +66,7 @@ tasks:
       - >-
         {{.CONTAINER_BIN}} build
         -t {{.IMAGE_PREFIX}}/sle:latest
+        -t {{.IMAGE_PREFIX}}/sle:{{.VERSION_TIMESTAMP}}
         -f containers/sle/Containerfile
         containers/sle
 
