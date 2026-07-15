@@ -92,13 +92,13 @@ variables:
 
 build-amd64:
   extends: .build
-  tags: [${RUNNER_TAG_AMD64}]
+  tags: ["${RUNNER_TAG_AMD64}"]
   variables:
     PLATFORM: linux/amd64
 
 build-arm64:
   extends: .build
-  tags: [${RUNNER_TAG_ARM64}]
+  tags: ["${RUNNER_TAG_ARM64}"]
   variables:
     PLATFORM: linux/arm64
 

@@ -16,6 +16,9 @@ spec:
       targetPort: {{ .port }}
       protocol: {{ .protocol | default "TCP" }}
       name: {{ .name }}
+      {{- if .nodePort }}
+      nodePort: {{ .nodePort }}
+      {{- end }}
     {{- end }}
   selector:
     {{- include "yamcs.selectorLabels" . | nindent 4 }}
