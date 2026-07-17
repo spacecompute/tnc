@@ -39,8 +39,34 @@ COPY settings.xm[l] /opt/jsle/
 RUN test -f /opt/jsle/settings.xml || \
     echo "<settings><proxies></proxies></settings>" > /opt/jsle/settings.xml
 
-# Compile and resolve dependencies (exec:java handles classpath via Maven)
-RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests
+# Override vulnerable transitive deps pinned by upstream jsle
+# CRITICAL:
+#   maven-shared-utils 3.2.1   → CVE-2022-29599 (stale cache from Maven plugins)
+#   maven-core 2.0.6/3.0       → CVE-2021-26291 (stale cache from Maven plugins)
+#   plexus-utils 1.5.8/2.0.4   → CVE-2017-1000487 (stale cache from Maven plugins)
+# HIGH:
+#   io.netty 4.1.130           → CVE-2026-42583, CVE-2026-44249, CVE-2026-45416,
+#                                 CVE-2026-50010
+#   commons-io 2.5/2.11.0      → CVE-2024-47554 (stale cache from Maven plugins)
+#   plexus-utils 1.5.8/2.0.4   → CVE-2022-4244, CVE-2025-67030 (stale cache)
+#   plexus-utils 3.5.1         → CVE-2025-67030 (stale cache from Maven plugins)
+# NOT OVERRIDDEN:
+#   plexus-utils 3.5.1          → CVE-2025-67030
+#     shipped in /usr/share/maven/lib/ by the maven:3.9.9-eclipse-temurin-17 base
+#     image; cannot be removed without breaking Maven itself
+RUN sed -i 's|<version>4.1.130.Final</version>|<version>4.1.135.Final</version>|' /opt/jsle/pom.xml
+
+# Compile and resolve dependencies, then purge vulnerable cached jars — all in one layer
+RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests && \
+    rm -rf /root/.m2/repository/org/apache/maven/shared/maven-shared-utils/3.2.1 \
+           /root/.m2/repository/org/apache/maven/maven-core/2.0.6 \
+           /root/.m2/repository/org/apache/maven/maven-core/3.0 \
+           /root/.m2/repository/org/codehaus/plexus/plexus-utils/1.5.8 \
+           /root/.m2/repository/org/codehaus/plexus/plexus-utils/2.0.4 \
+           /root/.m2/repository/org/codehaus/plexus/plexus-utils/3.5.1 \
+           /root/.m2/repository/commons-io/commons-io/2.5 \
+           /root/.m2/repository/commons-io/commons-io/2.11.0 \
+           /root/.m2/repository/io/netty/*/4.1.130.Final
 
 #--- SHARED GROUP (cross-service volume access; name from mission, GID always 10000)
 ARG MISSION_SC=mission-sc
