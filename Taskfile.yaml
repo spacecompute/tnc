@@ -1,10 +1,13 @@
 version: '3'
 
+env:
+  TZ: UTC
+  
 vars:
   CONTAINER_BIN: docker
   REGISTRY_HOST: ghcr.io
   VERSION_TIMESTAMP:
-    sh: date -u +'%Y.%j.%H%M%S'
+    sh: date -u +'%Y.%j.%H%M%SZ'
   IMAGE_PREFIX:
     sh: echo "{{.REGISTRY_HOST}}/$(git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
   # act — run GitHub Actions locally: https://github.com/nektos/act
