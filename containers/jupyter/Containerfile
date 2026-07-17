@@ -24,7 +24,6 @@ RUN apt-get update && \
 #--- Specifics
 # System runtimes and dev libraries for additional kernels
 RUN apt-get update && \
-    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         libzmq3-dev libffi-dev libcurl4-openssl-dev libssl-dev build-essential \
         ruby ruby-dev \

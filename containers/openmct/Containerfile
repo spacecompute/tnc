@@ -47,8 +47,42 @@ RUN git clone --recurse-submodules -b ${GIT_COMMIT} -j2 ${GIT_URL} openmct
 
 WORKDIR /opt/openmct
 
-RUN ${NODE_PATH}/npm install -loglevel verbose
-RUN ${NODE_PATH}/npm run build:example:master -loglevel verbose
+# Override vulnerable transitive deps pinned by upstream openmct-yamcs
+# CRITICAL:
+#   shell-quote <1.8.4      → CVE-2026-9277  (command injection)
+#   websocket-driver <0.7.5 → CVE-2026-54466 (message corruption)
+# HIGH:
+#   fast-uri <3.1.2          → CVE-2026-6321, CVE-2026-6322
+#   tmp <0.2.6               → CVE-2026-44705
+#   ws <8.21.0               → CVE-2026-48779
+# NOT OVERRIDDEN:
+#   mathjs 13.x → 15.x      → CVE-2026-40897, CVE-2026-41139
+#     upstream openmct-yamcs pins mathjs to exact 13.1.1; fix requires major
+#     version jump to 15.x which has breaking API changes
+#   undici 6.26 → 6.27       → CVE-2026-12151
+#     bundled inside the Node.js runtime (/opt/nvm/.../npm/node_modules/undici),
+#     not addressable via npm overrides; requires a Node.js release with the fix
+RUN ${NODE_PATH}/node -e " \
+      const pkg = require('./package.json'); \
+      pkg.overrides = Object.assign(pkg.overrides || {}, { \
+        'shell-quote': '>=1.8.4', \
+        'websocket-driver': '>=0.7.5', \
+        'fast-uri': '>=3.1.2', \
+        'tmp': '>=0.2.6', \
+        'ws': '>=8.21.0' \
+      }); \
+      require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));"
+# Install, build, then purge vulnerable nested deps and lock files — all in one layer
+# (build must run first as it reinstalls nested node_modules)
+RUN ${NODE_PATH}/npm install -loglevel verbose && \
+    ${NODE_PATH}/npm run build:example:master -loglevel verbose && \
+    rm -rf node_modules/openmct/node_modules/shell-quote \
+           node_modules/openmct/node_modules/websocket-driver \
+           node_modules/openmct/node_modules/fast-uri \
+           node_modules/openmct/node_modules/tmp \
+           node_modules/openmct/node_modules/ws \
+           node_modules/openmct/e2e/node_modules && \
+    find node_modules -mindepth 2 -name package-lock.json -delete
 
 # Default config files (missions override via volume mount)
 COPY index.js /opt/openmct/example/index.js
