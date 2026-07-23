@@ -21,10 +21,10 @@ ghcr.io/spacecompute/mission-control-systems/yamcs:latest
 | Property | Value |
 |----------|-------|
 | Base | `maven:3.9.9-eclipse-temurin-17` |
-| Default Source | `https://github.com/yamcs/yamcs/` (master) |
+| Default Source | `https://github.com/yamcs/quickstart` (master) |
 | Container Path | `/opt/yamcs/` |
 | Default Port | 8090 |
-| Start Command | `mvn yamcs:run -Dmaven.repo.local=/opt/yamcs/.m2/repository` |
+| Start Command | `/opt/yamcs/bin/yamcsd --etc-dir /opt/yamcs/etc --data-dir /opt/yamcs/yamcs-data` |
 
 ### Build
 
@@ -39,7 +39,7 @@ containers/yamcs/Containerfile
 containers/yamcs/entrypoint.sh
 ```
 
-The Containerfile clones the Yamcs source, compiles it with Maven, and sets up the entrypoint. Build-time ARGs (`GIT_URL`, `GIT_COMMIT`) control which repo and branch to clone.
+The Containerfile clones the Yamcs quickstart, builds a distribution via `mvn package yamcs:bundle`, and extracts `bin/yamcsd` + `lib/*.jar`. Build-time ARGs (`GIT_URL`, `GIT_COMMIT`) control which repo and branch to clone.
 
 ## Helm Chart
 
@@ -68,7 +68,6 @@ helm/yamcs/
 
 | Value | Default | Purpose |
 |-------|---------|---------|
-| `env.MAVEN_HTTPS_PROXY` | `""` | Maven proxy settings for `mvn` commands |
 | `env.HTTPS_PROXY` | `""` | HTTPS proxy |
 | `env.HTTP_PROXY` | `""` | HTTP proxy |
 | `env.NO_PROXY` | `""` | Proxy exclusions |
@@ -91,7 +90,9 @@ The chart includes a ConfigMap that mirrors `containers/yamcs/entrypoint.sh`:
 #!/usr/bin/env bash
 # Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
 cd /opt/yamcs
-mvn ${MAVEN_HTTPS_PROXY} yamcs:run -Dmaven.repo.local=/opt/yamcs/.m2/repository
+/opt/yamcs/bin/yamcsd --etc-dir /opt/yamcs/etc --data-dir /opt/yamcs/yamcs-data &
+echo $! > /opt/yamcs/var/run/pid
+tail -f /dev/null
 ```
 
 ## Yamcs Configuration
@@ -172,11 +173,8 @@ COPY myspacecraft.xtce /opt/yamcs/mdb/
 # Add instance config
 COPY yamcs.myspacecraft.yaml /opt/yamcs/etc/
 
-# Add custom decoders
-COPY decoders/ /opt/yamcs/src/main/java/
-
-# Recompile with custom code
-RUN mvn compile -DskipTests -Dmaven.repo.local=/opt/yamcs/.m2/repository
+# Add custom decoders (compiled at startup by entrypoint.sh)
+COPY decoders/ /opt/yamcs/decoders/
 ```
 
 ## API

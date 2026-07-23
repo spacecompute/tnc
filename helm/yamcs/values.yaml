@@ -10,13 +10,14 @@ command: ["/entrypoint.sh"]
 entrypoint: |
   #!/usr/bin/env bash
   set -e
+  pkill -f 'yamcs' 2>/dev/null || true
   [ -n "${SHARED_GID}" ] && umask 0002
   cd /opt/yamcs
 
-  # Wait for mission data (MDB, pom.xml, etc/ copied post-deploy via kubectl cp)
+  # Wait for mission data (MDB, etc/ copied post-deploy via kubectl cp)
   echo "Waiting for mission configuration..."
   for i in $(seq 1 90); do
-    if ls src/main/yamcs/mdb/*.xtce >/dev/null 2>&1; then
+    if ls mdb/*.xtce >/dev/null 2>&1; then
       echo "Mission data found."
       break
     fi
@@ -27,15 +28,31 @@ entrypoint: |
     sleep 2
   done
 
-  # Register Yamcs plugins
-  mvn ${MAVEN_HTTPS_PROXY} org.yamcs:yamcs-maven-plugin:detect \
-    -Dmaven.repo.local=/opt/yamcs/.m2/repository || true
+  # Compile mission-specific decoders into a JAR (if decoder sources are mounted)
+  if [ -d /opt/yamcs/decoders ] && ls /opt/yamcs/decoders/*.java 1>/dev/null 2>&1; then
+    echo "Compiling mission decoders..."
+    BUILD_DIR=/tmp/decoder-build
+    rm -rf ${BUILD_DIR}
+    mkdir -p ${BUILD_DIR}/META-INF/services
+    echo "com.example.myproject.JupyterPlugin" > ${BUILD_DIR}/META-INF/services/org.yamcs.Plugin
+    echo "com.example.myproject.ServicesPlugin" >> ${BUILD_DIR}/META-INF/services/org.yamcs.Plugin
+    for PLUGIN in com.example.myproject.JupyterPlugin com.example.myproject.ServicesPlugin; do
+      mkdir -p ${BUILD_DIR}/META-INF/yamcs/${PLUGIN}
+      printf "name=myproject\nversion=1.0.0-SNAPSHOT\n" > ${BUILD_DIR}/META-INF/yamcs/${PLUGIN}/plugin.properties
+    done
+    javac -cp "/opt/yamcs/lib/*" -d ${BUILD_DIR} /opt/yamcs/decoders/*.java
+    jar cf /opt/yamcs/lib/ext/mission-decoders.jar -C ${BUILD_DIR} .
+    rm -rf ${BUILD_DIR}
+    echo "Mission decoders compiled successfully."
+  fi
 
-  mvn ${MAVEN_HTTPS_PROXY} yamcs:run \
-    -Dmaven.repo.local=/opt/yamcs/.m2/repository
+  # Start yamcsd
+  mkdir -p /opt/yamcs/var/run
+  /opt/yamcs/bin/yamcsd --etc-dir /opt/yamcs/etc --data-dir /opt/yamcs/yamcs-data &
+  echo $! > /opt/yamcs/var/run/pid
+  tail -f /dev/null
 
 env:
-  MAVEN_HTTPS_PROXY: ""
   HTTPS_PROXY: ""
   HTTP_PROXY: ""
   NO_PROXY: ""
@@ -68,45 +85,49 @@ volumes:
   # PVC volumes — persistent data loaded post-deploy
   mdb:
     enabled: true
-    mountPath: /opt/yamcs/src/main/yamcs/mdb
+    mountPath: /opt/yamcs/mdb
     type: pvc
     size: 100Mi
   etc:
     enabled: true
-    mountPath: /opt/yamcs/src/main/yamcs/etc
+    mountPath: /opt/yamcs/etc
     type: pvc
     size: 100Mi
   incoming:
     enabled: true
-    mountPath: /opt/yamcs/src/main/yamcs/incoming
+    mountPath: /opt/yamcs/incoming
     type: pvc
     size: 100Mi
   displays:
     enabled: true
-    mountPath: /opt/yamcs/src/main/yamcs/displays
+    mountPath: /opt/yamcs/displays
     type: pvc
     size: 100Mi
 
   # emptyDir volumes — ephemeral, loaded post-deploy
-  target:
-    enabled: true
-    mountPath: /opt/yamcs/target
-    type: emptyDir
   scripts:
     enabled: true
     mountPath: /opt/yamcs/scripts
     type: emptyDir
   functions:
     enabled: true
-    mountPath: /opt/yamcs/src/main/yamcs/functions
+    mountPath: /opt/yamcs/functions
     type: emptyDir
   decoders:
     enabled: true
-    mountPath: /opt/yamcs/src/main/java/com/example/myproject
+    mountPath: /opt/yamcs/decoders
     type: emptyDir
   log:
     enabled: true
     mountPath: /opt/yamcs/log
+    type: emptyDir
+  yamcs-data:
+    enabled: true
+    mountPath: /opt/yamcs/yamcs-data
+    type: emptyDir
+  cache:
+    enabled: true
+    mountPath: /opt/yamcs/cache
     type: emptyDir
 
 podSecurityContext:

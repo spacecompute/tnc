@@ -53,7 +53,7 @@ task act:graph
 
 | Image | Base | Container Path | Start Command |
 |-------|------|---------------|---------------|
-| yamcs | maven:3.9.9-eclipse-temurin-17 | `/opt/yamcs/` | `mvn yamcs:run` |
+| yamcs | maven:3.9.9-eclipse-temurin-17 | `/opt/yamcs/` | `yamcsd --etc-dir /opt/yamcs/etc --data-dir /opt/yamcs/yamcs-data` |
 | openmct | ubuntu:25.04 + Node.js 24 | `/opt/openmct/` | `npm start` |
 | jupyter | jupyterhub:5 | `/opt/jupyter/` | `jupyterhub -f ./jupyterhub_config.py` |
 | sle | maven:3.9.9-eclipse-temurin-17 | `/opt/jsle/` | `mvn exec:java` |
@@ -67,7 +67,7 @@ All Containerfiles follow the same pattern:
 3. **Source ARGs** — `GIT_URL`, `GIT_COMMIT` (build-time only, for `git clone`)
 4. **System packages** — `apt-get install` for dev tools
 5. **WORKDIR** — set to `/opt/` then clone, then set to `/opt/<service>/`
-6. **Build step** — `mvn compile` or `npm install` + `npm run build`
+6. **Build step** — `mvn package yamcs:bundle` or `npm install` + `npm run build`
 7. **Entrypoint** — `COPY entrypoint.sh /entrypoint.sh` + `CMD ["/entrypoint.sh"]`
 
 ### Entrypoint Pattern
